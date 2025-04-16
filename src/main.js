@@ -1,6 +1,5 @@
 // main.js
 import Phaser from "phaser";
-import * as Colyseus from "colyseus.js";
 import { setupBoard } from "./utils/create.js";
 import { lockTowerSection } from "./utils/lock.js";
 import { updateAbilityText, updateSidebarText } from "./utils/ui.js";
@@ -10,9 +9,11 @@ import { movePiece, rotatePiece, dropPiece } from "./utils/move.js";
 import { checkCollision, checkCollisionAt } from "./utils/collision.js";
 import { lockPiece } from "./utils/place.js";
 import { TETROMINO_SHAPES, JLSTZ_KICKS, GRID_SIZE, BOARD_WIDTH, BOARD_HEIGHT } from "./utils/constants.js";
+import { shakeScreen, flashScreen } from "./utils/animHelpers.js";
+import { createClient, joinRoom, setupMessageHandlers, sendRoomMessage, useAbility } from "./utils/networkHelpers.js";
+import { checkTowerHeight } from "./utils/towerHelpers.js";
 
-let client = new Colyseus.Client("ws://localhost:2567");
-let room;
+let client, room;
 
 class GameScene extends Phaser.Scene {
   constructor() {
@@ -26,27 +27,14 @@ class GameScene extends Phaser.Scene {
   async create() {
     setupBoard(this);
     this.kicks = JLSTZ_KICKS;
-    room = await client.joinOrCreate("normal", { userId: "u123", username: "PlayerOne" });
+    
+    // Setup networking
+    client = createClient();
+    room = await joinRoom(client, "normal", { userId: "u123", username: "PlayerOne" });
     this.room = room;
-
-    room.onMessage("gameStart", () => spawnTetromino(this, TETROMINO_SHAPES));
-    room.onMessage("incomingAttack", () => {
-      this.instability += 10;
-      this.cameras.main.shake(300);
-      this.cameras.main.flash(300, 255, 0, 0);
-    });
-    room.onMessage("adjacentTowerUpdate", ({ from, towerHeight, instability }) => {
-      if (!this.adjacentTowers[from]) {
-        this.adjacentTowers[from] = this.add.group();
-      }
-      const tower = this.adjacentTowers[from];
-      tower.clear(true, true);
-      for (let i = 0; i < towerHeight; i++) {
-        const block = this.add.image(250 + Object.keys(this.adjacentTowers).indexOf(from) * 60, 580 - i * 20, "block").setScale(0.5);
-        tower.add(block);
-        if (instability > 20) block.setTint(0xff5555);
-      }
-    });
+    
+    // Setup message handlers
+    setupMessageHandlers(room, this, TETROMINO_SHAPES);
 
     this.input.keyboard.on("keydown", (event) => {
       const ability = this.abilityKeys[event.key];
@@ -57,8 +45,8 @@ class GameScene extends Phaser.Scene {
         return;
       }
       if (ability && this.abilities.includes(ability)) {
-        this.room.send("useAbility", { type: ability });
-        this.abilities = this.abilities.filter(a => a !== ability);
+        // Use ability helper instead of inline code
+        useAbility(this, ability);
         updateAbilityText(this);
       }
       if (!this.activePiece) return;
@@ -78,10 +66,18 @@ class GameScene extends Phaser.Scene {
     });
 
     this.time.delayedCall(3000, () => {
-      this.abilities.push("windGust", "earthShake");
+      //this.abilities.push("windGust", "earthShake");
       updateAbilityText(this);
       updateSidebarText(this);
     });
+  }
+  
+  // Add update method to continuously check tower height
+  update() {
+    // Check tower height periodically
+    if (this.activePiece) {
+      checkTowerHeight(this);
+    }
   }
 
   checkCollision() {

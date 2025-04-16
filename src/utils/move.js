@@ -1,6 +1,7 @@
 // utils/move.js
 import { drawPiece } from "./draw.js";
 import { clearActiveBlocks } from "./draw.js";
+import { tryRotation } from "./tetrominoHelpers.js";
 
 export function movePiece(scene, dx) {
   scene.activePiece.x += dx;
@@ -12,29 +13,10 @@ export function movePiece(scene, dx) {
 }
 
 export function rotatePiece(scene) {
-  const shape = scene.activePiece.shape;
-  const rotated = shape[0].map((_, i) => shape.map(row => row[i]).reverse());
-  const oldRotation = scene.activePiece.rotationIndex;
-  const newRotation = (oldRotation + 1) % 4;
-  const kicks = scene.kicks?.[`${oldRotation}>${newRotation}`] || [[0, 0]];
-  const oldX = scene.activePiece.x;
-  const oldY = scene.activePiece.y;
-
-  for (const [dx, dy] of kicks) {
-    scene.activePiece.shape = rotated;
-    scene.activePiece.x = oldX + dx;
-    scene.activePiece.y = oldY + dy;
-    if (!scene.checkCollision()) {
-      scene.activePiece.rotationIndex = newRotation;
-      drawPiece(scene);
-      return;
-    }
+  // If rotation is successful, the piece position will already be updated
+  if (tryRotation(scene, scene.activePiece, scene.kicks)) {
+    drawPiece(scene);
   }
-
-  scene.activePiece.shape = shape;
-  scene.activePiece.x = oldX;
-  scene.activePiece.y = oldY;
-  scene.activePiece.rotationIndex = oldRotation;
 }
 
 export function dropPiece(scene) {

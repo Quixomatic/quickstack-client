@@ -9,6 +9,11 @@ import {
   BUFFER_ROWS,
   VISIBLE_ROWS,
 } from "./constants.js";
+import { isCellOccupied } from "./boardHelpers.js";
+import { updateText } from "./uiHelpers.js";
+import { animateBlockPlacement, animateScoreChange } from "./animHelpers.js";
+import { sendRoomMessage } from "./networkHelpers.js";
+import { checkTowerHeight } from "./towerHelpers.js";
 
 export function lockPiece(scene) {
   const { shape, x, y } = scene.activePiece;
@@ -57,12 +62,9 @@ export function lockPiece(scene) {
             .image(newX * GRID_SIZE, newY * GRID_SIZE, "block")
             .setOrigin(0);
           scene.lockedBlocks.add(block);
-          scene.tweens.add({
-            targets: block,
-            scale: { from: 1.3, to: 1 },
-            duration: 200,
-            ease: "Back",
-          });
+          
+          // Use animation helper
+          animateBlockPlacement(scene, block);
         }
       }
     }
@@ -70,10 +72,22 @@ export function lockPiece(scene) {
 
   scene.towerHeight++;
   scene.score = scene.towerHeight * 10;
-  scene.scoreText.setText("Score: " + scene.score);
-  scene.room.send("blockPlaced", { x, y, shape });
+  updateText(scene.scoreText, scene.score, "Score: ");
+  
+  // Add score animation
+  const centerX = (x + shape[0].length / 2) * GRID_SIZE;
+  const centerY = (y + shape.length / 2) * GRID_SIZE;
+  animateScoreChange(scene, 10, centerX, centerY);
+  
+  // Use network helper
+  sendRoomMessage(scene.room, "blockPlaced", { x, y, shape });
+  
   scene.clearActiveBlocks();
   scene.activePiece = null;
   if (scene.fallTimer) scene.fallTimer.remove(false);
+  
+  // Check tower height after locking a piece
+  checkTowerHeight(scene);
+  
   return true;
 }

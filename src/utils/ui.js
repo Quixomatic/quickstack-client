@@ -1,9 +1,10 @@
 // utils/ui.js
+import { formatAbilityList, updateText } from "./uiHelpers.js";
 
 export function updateAbilityText(scene) {
-  scene.abilityText.setText(`Abilities: ${scene.abilities.join(", ") || "none"}`);
+  updateText(scene.abilityText, formatAbilityList(scene.abilities), "Abilities: ");
 }
 
 export function updateSidebarText(scene) {
-  scene.lockStatusText.setText(`Lock: ${scene.lockReady ? "Ready (L)" : "Unavailable"}`);
+  updateText(scene.lockStatusText, scene.lockReady ? "Ready (L)" : "Unavailable", "Lock: ");
 }

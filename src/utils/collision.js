@@ -1,5 +1,6 @@
 // utils/collision.js
-import { BOARD_WIDTH, BOARD_HEIGHT, BUFFER_ROWS, VISIBLE_ROWS, CUT_OFF_ROW } from "./constants.js";
+import { BOARD_WIDTH, BOARD_HEIGHT } from "./constants.js";
+import { isCellOccupied } from "./boardHelpers.js";
 
 export function checkCollision(scene) {
   return checkCollisionAt(scene, scene.activePiece.x, scene.activePiece.y, scene.activePiece.shape);
@@ -13,14 +14,11 @@ export function checkCollisionAt(scene, x, y, shape) {
       const newX = x + col;
       const newY = y + row;
 
+      // Check boundary collision
       if (newX < 0 || newX >= BOARD_WIDTH || newY < 0 || newY >= BOARD_HEIGHT) return true;
-
-      if (newY >= CUT_OFF_ROW) {
-        const historyY = newY - (BUFFER_ROWS + VISIBLE_ROWS);
-        if (scene.historyGrid[historyY]?.[newX]) return true;
-      } else {
-        if (scene.board[newY][newX]) return true;
-      }
+      
+      // Check collision with blocks using our helper
+      if (isCellOccupied(scene, newX, newY)) return true;
     }
   }
   return false;
