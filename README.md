@@ -16,10 +16,10 @@
 - Blend **Tetris familiarity** with **roguelike progression** (tower locking)
 - Create a visual log of tower growth through the history system
 - Enable long-term ranked play with server-based progression and match data
+
 **QuickStack** is a competitive 2D multiplayer game where players drop tetromino-style blocks to build a tall and stable tower. The game includes a buffer zone for spawning, a visible play area, and a history zone below the fold to preserve previous tower sections.
 
 - Players compete to build stable towers.
-- Instability and collapse may be introduced later.
 - Strategic locking of tower sections allows players to push progress downward and reset the board.
 - Multiplayer interactions include visibility of other towers and real-time attacks.
 
@@ -35,6 +35,7 @@ QuickStack/
 │   │   └── utils/              # Modular game logic
 │   │       ├── constants.js    # Game constants
 │   │       ├── create.js       # Scene setup
+│   │       ├── boardHelpers.js # Board manipulation and cell checking
 │   │       ├── draw.js         # drawPiece, drawGhostPiece, clearActiveBlocks
 │   │       ├── collision.js    # checkCollision, checkCollisionAt
 │   │       ├── move.js         # movePiece, rotatePiece, dropPiece
@@ -42,6 +43,14 @@ QuickStack/
 │   │       ├── lock.js         # lockTowerSection logic
 │   │       ├── spawn.js        # spawnTetromino logic
 │   │       ├── ui.js           # updateAbilityText, updateSidebarText
+│   │       ├── uiHelpers.js    # UI element creation and text updates
+│   │       ├── tetrominoHelpers.js # Piece manipulation and rendering
+│   │       ├── pieceHelpers.js # Preview queue and piece management
+│   │       ├── chargeHelpers.js # Charge-based lock mechanics
+│   │       ├── levelHelpers.js # Level progression and scoring
+│   │       ├── animHelpers.js  # Animations and visual effects
+│   │       ├── networkHelpers.js # Multiplayer communication
+│   │       ├── towerHelpers.js # Auto-lock and tower management
 │   ├── index.html
 │   └── vite.config.js
 │
@@ -81,27 +90,49 @@ QuickStack/
 
 ## 🎯 Gameplay Mechanics
 
-### Spawn
-- New tetromino spawns in the buffer zone
+### Spawn & Preview Queue
+- Next tetromino spawns in the buffer zone
+- Preview queue shows upcoming pieces (default 3)
 - `spawnTetromino(scene, shapes)` initializes a piece and starts the fall timer
 
 ### Drop & Collision
 - `dropPiece(scene)` advances the piece downward
 - `checkCollisionAt()` detects against board and history grid
+- Drop speed increases with player level
 
 ### Piece Locking
 - `lockPiece(scene)` saves block positions and renders them
 - If blocks are placed below the fold, they update `historyGrid`
+- Detects and scores completed lines (Tetris)
 
 ### Tower Section Locking
 - Pressing **L** when `lockReady` is true triggers `lockTowerSection()`
 - Everything from topRow down (except the top row) is moved to `historyGrid`
 - That top row becomes the new foundation
+- Level increases after each tower section lock
+
+### Charge-based Lock System
+- Lock ability must be charged by placing pieces
+- Charge meter fills visually, showing progress
+- Only when fully charged can the player lock a tower section
+
+### Auto-Lock System
+- Triggers countdown when tower reaches a threshold height
+- Emergency instant lock when tower gets dangerously high
+- Can be toggled on/off via UI
 
 ### History Grid
 - Stores previous tower sections
 - Renders below the fold using opacity
 - Stack grows downward
+
+### Level & Scoring System
+- Level increases when tower section is locked
+- Higher levels increase piece drop speed
+- Scores awarded for:
+  - Basic piece placement (scaled by level)
+  - Completing lines (classic Tetris scoring, scaled by level)
+  - Locking tower sections (large bonus, scaled by level)
 
 ---
 
@@ -109,53 +140,48 @@ QuickStack/
 - Sidebar added on the right of the playfield (200px wide)
 - Contains:
   - **Score**
+  - **Level**
+  - **Lines Cleared**
   - **Abilities** (with `updateAbilityText()`)
   - **Lock status** (with `updateSidebarText()`)
+  - **Next Pieces Preview**
+  - **Lock Charge Meter**
+  - **Auto-Lock Toggle**
 - Uses `wordWrap` and `fixedWidth` to prevent overflow
 
 ---
 
 ## ✅ Features Completed
 
-- Modularized Phaser codebase for testability and extensibility
-- Clean separation between core gameplay functions (draw, spawn, move, lock)
-- Sidebar UI layout with ability display and lock readiness
-- Full integration of `historyGrid` for persistent tower sections
-- Ghost piece logic and drop projection
-- Lock system that promotes clean building and milestone resets
-- Ability to manually lock or be forced to lock when overbuilding
-- Locked tower sections fade visually and accumulate below the fold
+- Modularized codebase with helper functions for better maintainability
+- Complete tetromino system with rotation, wall kicks, and ghost pieces
+- Tower section locking with history tracking
+- Charge-based lock mechanic that requires strategic play
+- Level progression system with increasing difficulty
+- Classic Tetris-style scoring for lines and tower management
+- Next piece preview queue for strategic planning
+- Auto-lock system with countdown and emergency locking
+- Line completion detection with visual feedback (Tetris)
 - Multiplayer-ready architecture using Colyseus with real-time updates
-- Modular codebase
-- Ghost piece rendering
-- Piece locking and rendering
-- Tower section locking
-- History grid persistence
-- Sidebar with status
-- Multiplayer connection via Colyseus
+- Visual feedback through animations, flashes, and highlighting
+- Fully functional sidebar UI with game stats and controls
 
 ---
 
 ## 🛠️ Next Development Ideas
 
-- [ ] Charge-based lock bar (fill with clean play)
-- [ ] Auto-lock after reaching height threshold
-- [ ] Instability calculation & tower collapse
-- [ ] Multiplayer scoreboard
-- [ ] Animated tower sections
-- [ ] Replay or timeline of locked sections
-- [ ] SFX for locks, drops, errors
-
-- [ ] Ability cooldowns and recharging visual indicators
-- [ ] Piece preview queue (next tetromino)
-- [ ] Gamepad support (WASD + arrow fallback)
-- [ ] Settings menu for sensitivity, UI scaling, etc.
-- [ ] Spectator mode (for multiplayer rooms)
-- [ ] Server-authoritative lock validation
-- [ ] Replay system per round
-- [ ] Tower instability algorithm (based on shape balance, overhangs, etc.)
-- [ ] Mobile-friendly layout with responsive controls
-- [ ] End-of-game summary: tower height, time survived, # of locks
+- [ ] Instability calculation & tower collapse - Add physics-based instability to make towers potentially collapse
+- [ ] Piece hold system - Allow holding a piece for later use
+- [ ] Ability cooldowns and recharging visual indicators - Better UI for abilities
+- [ ] Piece color variations - Visual distinction for different pieces
+- [ ] Mobile-friendly layout with touch controls - Expand to mobile platforms
+- [ ] Advanced scoring system - Combo chains, T-spins, etc.
+- [ ] Advanced tower section management - Multiple section types
+- [ ] Visual enhancements - Particles, better animations, background effects
+- [ ] Sound effects and music - Audio feedback for actions
+- [ ] Settings menu - Customize game parameters
+- [ ] Tutorial system - Help new players learn the mechanics
+- [ ] High score board - Local and server-based leaderboards
 
 ## 🔐 Technical Systems Planned
 
@@ -166,7 +192,7 @@ QuickStack/
 - **Purpose:** Handles rendering, input, UI updates, physics, and animations
 - **Assets:** Tetromino sprites and basic geometric shading
 - **Modular Codebase:** All core gameplay logic (movement, collision, draw, etc.) split into small utility modules under `utils/`
-- **Key UI Modules:** Sidebar with ability and lock status, score tracking, future lock/charge visual meter
+- **Key UI Modules:** Sidebar with ability and lock status, score tracking, level display, charge meter
 
 #### 🌐 Server (Backend)
 - **Tech:** [Colyseus](https://colyseus.io/) multiplayer framework on Node.js
@@ -175,12 +201,14 @@ QuickStack/
 - **Shared State:** Planned usage of Colyseus schemas (`shared/schema.js`) for synchronizing tower height, instability, and scores between players
 - **Transport Layer:** WebSockets with room-based channels
 
-
-### Charge Lock Mechanism
-- Visual sidebar indicator for lock availability
-- Charge fills over time or from good performance (e.g., lines cleared, fast placement)
-- Once full, enables early lock (`lockReady = true`)
-- Fallback auto-lock if tower reaches visible height threshold
+### Instability System (Planned)
+- Calculate tower stability based on:
+  - Completed lines (more stable)
+  - Overhanging pieces (less stable)
+  - Height distribution (evenly distributed is more stable)
+  - Tower height (taller is less stable)
+- Visual indicators of instability
+- Potential partial or complete collapse
 
 ### Multiplayer Framework (Colyseus)
 - Matchmaking (future): general pool → ranked pool
@@ -197,11 +225,15 @@ QuickStack/
 
 ## 🎨 Visual & UX Enhancements
 - Sidebar layout with fixed-width wrapping
-- Lock status display (`Ready (L)` vs `Unavailable`)
+- Lock status display (`Ready (L)` vs `Charging...`)
 - Score display dynamically updates
+- Level and line count displays
+- Charge meter with color coding
+- Preview queue showing upcoming pieces
 - Visual divider between tower and history zone
 - Gutter shading for boundary clarity
 - Animated block scaling on placement
+- Pulsing highlights for completed lines
 
 ## 🔄 Game Lifecycle
 - Room joins (`joinOrCreate`)
@@ -209,6 +241,5 @@ QuickStack/
 - Player drops, rotates, locks pieces
 - Triggers `blockPlaced` to server
 - Server broadcasts back updated stats (like opponent height)
-
-Let me know if you'd like to focus on a specific next feature or expand this doc further.
-
+- Level increases after tower section locking
+- Game speed increases with level progression

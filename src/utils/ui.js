@@ -6,5 +6,5 @@ export function updateAbilityText(scene) {
 }
 
 export function updateSidebarText(scene) {
-  updateText(scene.lockStatusText, scene.lockReady ? "Ready (L)" : "Unavailable", "Lock: ");
+  updateText(scene.lockStatusText, scene.lockReady ? "Ready (L)" : "Charging...", "Lock: ");
 }

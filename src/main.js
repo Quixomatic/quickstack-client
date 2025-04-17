@@ -12,6 +12,7 @@ import { TETROMINO_SHAPES, JLSTZ_KICKS, GRID_SIZE, BOARD_WIDTH, BOARD_HEIGHT } f
 import { shakeScreen, flashScreen } from "./utils/animHelpers.js";
 import { createClient, joinRoom, setupMessageHandlers, sendRoomMessage, useAbility } from "./utils/networkHelpers.js";
 import { checkTowerHeight } from "./utils/towerHelpers.js";
+import { initializePreviewQueue } from "./utils/pieceHelpers.js";
 
 let client, room;
 
@@ -21,7 +22,7 @@ class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("block", "./assets/block.png");
+    this.load.image("block", "./assets/block-v1.png");
   }
 
   async create() {
@@ -35,12 +36,15 @@ class GameScene extends Phaser.Scene {
     
     // Setup message handlers
     setupMessageHandlers(room, this, TETROMINO_SHAPES);
+    
+    // Initialize preview queue
+    initializePreviewQueue(this, TETROMINO_SHAPES, this.previewSize);
 
     this.input.keyboard.on("keydown", (event) => {
       const ability = this.abilityKeys[event.key];
       if (ability === "lockNow" && this.lockReady) {
         lockTowerSection(this);
-        this.lockReady = false;
+        // lockReady will be set to false by resetCharge
         updateSidebarText(this);
         return;
       }

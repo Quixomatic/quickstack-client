@@ -13,8 +13,13 @@ export function setupBoard(scene) {
   scene.historyGrid = createEmptyBoard(HISTORY_ROWS);
   scene.historyBlocks = scene.add.group();
   scene.adjacentTowers = {};
+  
+  // Update charge-related variables
   scene.chargeLevel = 0;
-  scene.lockReady = true;
+  scene.maxChargeLevel = 100;
+  scene.chargeMeter = null;
+  scene.chargeText = null;
+  scene.lockReady = false; // Start with lock not ready
   
   // Add auto-lock variables
   scene.autoLockEnabled = true;
@@ -22,6 +27,18 @@ export function setupBoard(scene) {
   scene.autoLockCountdown = 5; // Seconds before auto-locking
   scene.autoLockTimer = null;
   scene.autoLockWarning = null;
+  
+  // Add piece preview queue
+  scene.previewQueue = [];
+  scene.previewBlocks = scene.add.group();
+  scene.previewSize = 3; // Number of pieces to show in preview
+  
+  // Add level and scoring related variables
+  scene.level = 0;
+  scene.linesCleared = 0;
+  scene.score = 0;
+  scene.towerHeight = 0;
+  scene.instability = 0;
 
   // Build foundation
   for (let i = GUTTER_WIDTH; i < GUTTER_WIDTH + TOWER_WIDTH; i++) {
@@ -45,7 +62,7 @@ export function setupBoard(scene) {
   // Create UI text elements
   scene.scoreText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 10, "Score: 0", textStyle);
   scene.abilityText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 40, "Abilities: none", textStyle);
-  scene.lockStatusText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 70, "Lock: Unavailable", textStyle);
+  scene.lockStatusText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 70, "Lock: Charging...", textStyle);
   
   // Add auto-lock toggle
   const autoLockToggle = scene.add.text(
@@ -64,6 +81,64 @@ export function setupBoard(scene) {
       cancelAutoLockCountdown(scene);
     }
   });
+  
+  // Add level text display to sidebar
+  scene.levelText = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 10, 
+    380, 
+    "Level: 0", 
+    textStyle
+  );
+  
+  // Add lines cleared counter
+  scene.linesText = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 10, 
+    410, 
+    "Lines: 0", 
+    textStyle
+  );
+  
+  // Add preview queue label to sidebar
+  const previewLabel = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 10, 
+    130, 
+    "Next Pieces:", 
+    textStyle
+  );
+  
+  // Add charge meter to sidebar
+  const chargeLabel = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 10, 
+    350, 
+    "Lock Charge:", 
+    textStyle
+  );
+  
+  // Create the empty charge meter background
+  scene.add.rectangle(
+    GRID_SIZE * BOARD_WIDTH + 10,
+    380,
+    180,
+    20,
+    0x333333
+  ).setOrigin(0, 0);
+  
+  // Create the charge meter fill (starts empty)
+  scene.chargeMeter = scene.add.rectangle(
+    GRID_SIZE * BOARD_WIDTH + 10,
+    380,
+    0, // Width will be updated based on charge level
+    20,
+    0x00ff00
+  ).setOrigin(0, 0);
+  
+  // Charge level text
+  scene.chargeText = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 100,
+    380,
+    "0%",
+    { fontSize: "14px", fill: "#fff" }
+  ).setOrigin(0.5, 0);
 
   // Shade gutters
   createShadedRect(scene, 0, 0, GRID_SIZE * GUTTER_WIDTH, GRID_SIZE * BOARD_HEIGHT);
@@ -83,10 +158,6 @@ export function setupBoard(scene) {
     4: "wobbleCurse",
     l: "lockNow"
   };
-
-  scene.score = 0;
-  scene.towerHeight = 0;
-  scene.instability = 0;
 
   scene.cameras.main.setBounds(0, 0, scene.game.config.width, GRID_SIZE * BOARD_HEIGHT);
   scene.cameras.main.scrollY = 0;

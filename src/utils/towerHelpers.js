@@ -24,16 +24,19 @@ export function checkTowerHeight(scene) {
     // Cancel any existing countdown
     cancelAutoLockCountdown(scene);
     
+    // Store original lock ready state
+    const originalLockReady = scene.lockReady;
+    
+    // Force lock ready to true for emergency lock
+    scene.lockReady = true;
+    
     // Perform emergency lock immediately
     lockTowerSection(scene);
     
-    // Reset lockReady to false to prevent immediate manual locking
-    scene.lockReady = false;
-    
-    // Reset lock ready after a delay
-    scene.time.delayedCall(3000, () => {
-      scene.lockReady = true;
-    });
+    // If lock wasn't ready before, make sure it stays false
+    if (!originalLockReady) {
+      scene.lockReady = false;
+    }
     
     return;
   }
@@ -104,18 +107,21 @@ export function cancelAutoLockCountdown(scene) {
 
 // Perform the automatic tower lock
 export function performAutoLock(scene) {
+  // Override the charge check for auto-locking
+  const originalLockReady = scene.lockReady;
+  scene.lockReady = true; // Force to true temporarily
+  
   // Execute the lock
   lockTowerSection(scene);
   
+  // Restore the original lock ready state if it wasn't consumed
+  if (originalLockReady === false) {
+    scene.lockReady = false;
+  }
+  
   // Clean up the timer and warning
   scene.autoLockTimer = null;
-  scene.autoLockWarning.setVisible(false);
-  
-  // Set lockReady to false to prevent immediate manual locking
-  scene.lockReady = false;
-  
-  // Reset lock ready after a delay
-  scene.time.delayedCall(3000, () => {
-    scene.lockReady = true;
-  });
+  if (scene.autoLockWarning) {
+    scene.autoLockWarning.setVisible(false);
+  }
 }

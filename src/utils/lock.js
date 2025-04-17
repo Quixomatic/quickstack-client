@@ -1,14 +1,20 @@
 // utils/lock.js
 import { GRID_SIZE, BOARD_WIDTH, CUT_OFF_ROW, HISTORY_ROWS, BUFFER_ROWS, VISIBLE_ROWS } from "./constants.js";
 import { createEmptyBoard, findTopRow, copyBoardSection } from "./boardHelpers.js";
+import { resetCharge } from "./chargeHelpers.js";
+import { increaseLevel, calculateScore } from "./levelHelpers.js";
+import { updateText } from "./uiHelpers.js";
 
 export function lockTowerSection(scene) {
+  // Only allow locking if charge is full (extra safety check)
+  if (!scene.lockReady) return;
+  
   // Find topmost filled row
   const topRow = findTopRow(scene.board);
   if (topRow === -1) return; // No blocks to lock
   
-  // Get rows to move to history
-  const newHistoryRows = copyBoardSection(scene.board, topRow, CUT_OFF_ROW);
+  // Get rows to move to history, starting from the row BELOW the top row
+  const newHistoryRows = copyBoardSection(scene.board, topRow + 1, CUT_OFF_ROW);
   
   // Update history grid
   scene.historyGrid = [...newHistoryRows, ...scene.historyGrid].slice(0, HISTORY_ROWS);
@@ -53,4 +59,19 @@ export function lockTowerSection(scene) {
       }
     }
   }
+  
+  // Increase level and score after tower section lock
+  increaseLevel(scene);
+  
+  // Add bonus score for locking a tower section
+  const lockBonus = calculateScore(scene.level, 0, true);
+  scene.score += lockBonus;
+  updateText(scene.scoreText, scene.score, "Score: ");
+  
+  // Reset charge after locking
+  scene.chargeLevel = 0;
+  resetCharge(scene);
+  
+  // Make sure lockReady is updated properly
+  scene.lockReady = false;
 }

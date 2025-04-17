@@ -1,5 +1,5 @@
 // utils/boardHelpers.js
-import { BOARD_WIDTH, BUFFER_ROWS, VISIBLE_ROWS, CUT_OFF_ROW } from "./constants.js";
+import { BOARD_WIDTH, BUFFER_ROWS, VISIBLE_ROWS, CUT_OFF_ROW, GUTTER_WIDTH, TOWER_WIDTH } from "./constants.js";
 
 // Create a clean empty board of specified dimensions
 export function createEmptyBoard(rows, cols = BOARD_WIDTH) {
@@ -49,4 +49,29 @@ export function copyBoardSection(board, startRow, endRow) {
     }
   }
   return rows;
+}
+
+// Check if a row is completely filled (a Tetris line)
+export function isRowComplete(board, rowIndex, gutterWidth, towerWidth) {
+  // Only check the tower area (excluding gutters)
+  for (let x = gutterWidth; x < gutterWidth + towerWidth; x++) {
+    if (!board[rowIndex][x]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Find all complete rows in the tower
+export function findCompleteRows(scene) {
+  const completeRows = [];
+  
+  // Check entire board for complete rows
+  for (let y = 0; y < scene.board.length; y++) {
+    if (isRowComplete(scene.board, y, GUTTER_WIDTH, TOWER_WIDTH)) {
+      completeRows.push(y);
+    }
+  }
+  
+  return completeRows;
 }
