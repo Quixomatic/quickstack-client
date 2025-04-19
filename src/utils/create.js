@@ -3,6 +3,7 @@ import { GRID_SIZE, BOARD_WIDTH, BOARD_HEIGHT, GUTTER_WIDTH, TOWER_WIDTH, BUFFER
 import { createEmptyBoard } from "./boardHelpers.js";
 import { createTextStyle, createShadedRect } from "./uiHelpers.js";
 import { cancelAutoLockCountdown } from "./towerHelpers.js";
+import { renderDebugOverlay } from "./instabilityHelpers.js";
 
 export function setupBoard(scene) {
   scene.abilities = [];
@@ -21,6 +22,22 @@ export function setupBoard(scene) {
   scene.chargeText = null;
   scene.lockReady = false; // Start with lock not ready
   
+  // Add stability-related variables
+  scene.instability = 0;
+  scene.externalInstability = 0;
+  scene.isShaking = false;
+  scene.isCollapsing = false;
+  scene.cellStability = null; // Will be initialized on first piece placement
+  scene.rowStability = null; // Will be initialized on first piece placement
+  scene.historicalStability = 100; // Start with perfect historical stability
+  scene.lockedSectionCount = 0; // Initialize locked section counter
+  scene.rawSectionStability = 100; // Raw stability of current section
+  
+  // Add debug mode variables
+  scene.debugMode = false; // Start with debug off
+  scene.debugGraphics = null; // Will hold debug visualization
+  scene.debugText = []; // Will hold debug text objects
+  
   // Add auto-lock variables
   scene.autoLockEnabled = true;
   scene.autoLockThreshold = 10; // Number of blocks from the top to trigger auto-lock
@@ -38,7 +55,6 @@ export function setupBoard(scene) {
   scene.linesCleared = 0;
   scene.score = 0;
   scene.towerHeight = 0;
-  scene.instability = 0;
 
   // Build foundation
   for (let i = GUTTER_WIDTH; i < GUTTER_WIDTH + TOWER_WIDTH; i++) {
@@ -63,6 +79,14 @@ export function setupBoard(scene) {
   scene.scoreText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 10, "Score: 0", textStyle);
   scene.abilityText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 40, "Abilities: none", textStyle);
   scene.lockStatusText = scene.add.text(GRID_SIZE * BOARD_WIDTH + 10, 70, "Lock: Charging...", textStyle);
+  
+  // Add stability text display
+  scene.instabilityText = scene.add.text(
+    GRID_SIZE * BOARD_WIDTH + 10, 
+    440, 
+    "Stability: 100%", 
+    textStyle
+  );
   
   // Add auto-lock toggle
   const autoLockToggle = scene.add.text(
@@ -161,4 +185,23 @@ export function setupBoard(scene) {
 
   scene.cameras.main.setBounds(0, 0, scene.game.config.width, GRID_SIZE * BOARD_HEIGHT);
   scene.cameras.main.scrollY = 0;
+  
+  // Add debug mode toggle (G key)
+  scene.input.keyboard.on('keydown-G', () => {
+    scene.debugMode = !scene.debugMode;
+    
+    // Remove previous debug graphics if any
+    if (scene.debugGraphics) {
+      scene.debugGraphics.clear();
+      scene.debugText.forEach(text => text.destroy());
+      scene.debugText = [];
+    }
+    
+    // Create new debug graphics if enabling
+    if (scene.debugMode) {
+      scene.debugGraphics = scene.add.graphics();
+      // Initial render of debug overlay
+      renderDebugOverlay(scene);
+    }
+  });
 }

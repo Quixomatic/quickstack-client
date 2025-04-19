@@ -51,6 +51,7 @@ QuickStack/
 │   │       ├── animHelpers.js  # Animations and visual effects
 │   │       ├── networkHelpers.js # Multiplayer communication
 │   │       ├── towerHelpers.js # Auto-lock and tower management
+│   │       ├── instabilityHelpers.js # Tower stability calculations
 │   ├── index.html
 │   └── vite.config.js
 │
@@ -105,6 +106,12 @@ QuickStack/
 - If blocks are placed below the fold, they update `historyGrid`
 - Detects and scores completed lines (Tetris)
 
+### Gutter Management
+- Pieces hanging in gutters have blocks stripped away
+- Each stripped block incurs a score penalty
+- Animated falling effect provides visual feedback
+- Prevents exploitative building strategies
+
 ### Tower Section Locking
 - Pressing **L** when `lockReady` is true triggers `lockTowerSection()`
 - Everything from topRow down (except the top row) is moved to `historyGrid`
@@ -133,6 +140,28 @@ QuickStack/
   - Basic piece placement (scaled by level)
   - Completing lines (classic Tetris scoring, scaled by level)
   - Locking tower sections (large bonus, scaled by level)
+- Penalties for gutter overhangs and instability
+
+### Stability System
+- **Cell-level stability**: Each block has its own stability value
+- **Row stability**: Calculated from cell stability values
+- **Tower stability**: Affected by both current and historical stability
+- **Historical tracking**: Average stability across all locked sections
+- Visual feedback with color-coded blocks:
+  - Blue: Very stable (85-100%)
+  - Green: Stable (70-85%)
+  - Yellow: Moderate stability (50-70%)
+  - Orange: Unstable (30-50%)
+  - Red: Critical instability (0-30%)
+- Debug mode (G key) shows detailed stability values
+- Structural factors affecting stability:
+  - Direct support (blocks below)
+  - Diagonal support
+  - Lateral support (adjacent blocks)
+  - Voids (covered empty spaces)
+  - Tower width (thin towers are less stable)
+  - Consecutive unstable rows
+- Tower collapse triggered at critical instability levels
 
 ---
 
@@ -147,6 +176,7 @@ QuickStack/
   - **Next Pieces Preview**
   - **Lock Charge Meter**
   - **Auto-Lock Toggle**
+  - **Stability Percentage**
 - Uses `wordWrap` and `fixedWidth` to prevent overflow
 
 ---
@@ -165,12 +195,18 @@ QuickStack/
 - Multiplayer-ready architecture using Colyseus with real-time updates
 - Visual feedback through animations, flashes, and highlighting
 - Fully functional sidebar UI with game stats and controls
+- Advanced stability system with cell, row, and tower-level calculations
+- Gutter overhang detection and penalties
+- Tower collapse mechanics
+- Cell-level visual feedback for stability (color-coded blocks)
+- Debug visualization for stability values (toggle with G key)
 
 ---
 
 ## 🛠️ Next Development Ideas
 
-- [ ] Instability calculation & tower collapse - Add physics-based instability to make towers potentially collapse
+- [ ] ~~Instability calculation & tower collapse~~ ✅ Implemented!
+- [ ] ~~Gutter overhang penalties~~ ✅ Implemented!
 - [ ] Piece hold system - Allow holding a piece for later use
 - [ ] Ability cooldowns and recharging visual indicators - Better UI for abilities
 - [ ] Piece color variations - Visual distinction for different pieces
@@ -183,7 +219,7 @@ QuickStack/
 - [ ] Tutorial system - Help new players learn the mechanics
 - [ ] High score board - Local and server-based leaderboards
 
-## 🔐 Technical Systems Planned
+## 🔐 Technical Systems Implemented
 
 ### Architecture Overview
 
@@ -201,14 +237,18 @@ QuickStack/
 - **Shared State:** Planned usage of Colyseus schemas (`shared/schema.js`) for synchronizing tower height, instability, and scores between players
 - **Transport Layer:** WebSockets with room-based channels
 
-### Instability System (Planned)
-- Calculate tower stability based on:
-  - Completed lines (more stable)
-  - Overhanging pieces (less stable)
-  - Height distribution (evenly distributed is more stable)
-  - Tower height (taller is less stable)
-- Visual indicators of instability
-- Potential partial or complete collapse
+### Stability System
+- Calculates tower stability based on:
+  - Support structure (direct and diagonal)
+  - Lateral connections (side-by-side blocks)
+  - Voids (trapped empty spaces)
+  - Tower width (thin towers are less stable)
+  - Row completeness (complete rows are more stable)
+- Historical stability tracking across tower sections
+- Visual indicators of stability through color-coded blocks
+- Tower collapse triggered at critical instability levels
+- Animated collapse with blocks falling away and tower compaction
+- Debug visualization for detailed stability values
 
 ### Multiplayer Framework (Colyseus)
 - Matchmaking (future): general pool → ranked pool
@@ -234,6 +274,9 @@ QuickStack/
 - Gutter shading for boundary clarity
 - Animated block scaling on placement
 - Pulsing highlights for completed lines
+- Color-coded blocks reflecting stability
+- Animated gutter overhang penalties
+- Stability percentage display
 
 ## 🔄 Game Lifecycle
 - Room joins (`joinOrCreate`)
@@ -243,3 +286,5 @@ QuickStack/
 - Server broadcasts back updated stats (like opponent height)
 - Level increases after tower section locking
 - Game speed increases with level progression
+- Tower stability affects gameplay difficulty
+- Collapse occurs at critical instability

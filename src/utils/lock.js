@@ -4,10 +4,45 @@ import { createEmptyBoard, findTopRow, copyBoardSection } from "./boardHelpers.j
 import { resetCharge } from "./chargeHelpers.js";
 import { increaseLevel, calculateScore } from "./levelHelpers.js";
 import { updateText } from "./uiHelpers.js";
+import { getStabilityTextColor } from "./instabilityHelpers.js";
 
 export function lockTowerSection(scene) {
   // Only allow locking if charge is full (extra safety check)
   if (!scene.lockReady) return;
+  
+  // Calculate current section stability
+  const currentSectionStability = scene.rawSectionStability !== undefined ? 
+    scene.rawSectionStability : (100 - scene.instability);
+  
+  // Update historical stability with a proper average
+  if (scene.historicalStability === undefined || scene.lockedSectionCount === undefined) {
+    // First tower section being locked
+    scene.historicalStability = currentSectionStability;
+    scene.lockedSectionCount = 1;
+  } else {
+    // Calculate weighted average of all sections
+    // This gives equal weight to all previously locked sections
+    const totalCount = scene.lockedSectionCount + 1;
+    scene.historicalStability = (scene.historicalStability * scene.lockedSectionCount + currentSectionStability) / totalCount;
+    scene.lockedSectionCount++;
+  }
+  
+  // Display stability inheritance message
+  const message = scene.add.text(
+    scene.game.config.width / 2,
+    150,
+    `Average Stability: ${Math.floor(scene.historicalStability)}%`,
+    { fontSize: '18px', fill: getStabilityTextColor(scene.historicalStability), fontStyle: 'bold' }
+  ).setOrigin(0.5);
+  
+  // Fade out message
+  scene.tweens.add({
+    targets: message,
+    alpha: 0,
+    y: 120,
+    duration: 2000,
+    onComplete: () => message.destroy()
+  });
   
   // Find topmost filled row
   const topRow = findTopRow(scene.board);
@@ -33,6 +68,8 @@ export function lockTowerSection(scene) {
 
   // Re-render locked blocks based on the cleared board
   scene.lockedBlocks.clear(true, true);
+  
+  // Redraw blocks based on new board
   for (let y = 0; y < scene.board.length; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       if (scene.board[y][x]) {

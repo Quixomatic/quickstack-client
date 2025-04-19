@@ -13,6 +13,7 @@ import { shakeScreen, flashScreen } from "./utils/animHelpers.js";
 import { createClient, joinRoom, setupMessageHandlers, sendRoomMessage, useAbility } from "./utils/networkHelpers.js";
 import { checkTowerHeight } from "./utils/towerHelpers.js";
 import { initializePreviewQueue } from "./utils/pieceHelpers.js";
+import { calculateStability, updateStabilityEffects } from "./utils/instabilityHelpers.js";
 
 let client, room;
 
